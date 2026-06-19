@@ -1,0 +1,230 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EcoSort - Smart Waste</title>
+    <!-- Include the HTML5 QR Code Library -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        /* Mobile App Reset & Styling */
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; padding: 0; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        
+        /* Mobile Device Container */
+        .app-container { width: 100%; max-width: 400px; height: 100vh; background-color: #ffffff; position: relative; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        
+        /* Screens */
+        .screen { display: none; flex-direction: column; height: 100%; padding: 20px; animation: fadeIn 0.3s ease-in-out; }
+        .screen.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Typography & Colors */
+        h1 { font-size: 24px; color: #1a1a1a; margin-bottom: 5px; }
+        p { color: #666; font-size: 14px; }
+        .text-center { text-align: center; }
+        .text-green { color: #2e7d32; }
+
+        /* Inputs & Buttons */
+        input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .btn { width: 100%; padding: 15px; background-color: #2e7d32; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn:active { background-color: #1b5e20; }
+        .btn-outline { background-color: transparent; color: #2e7d32; border: 2px solid #2e7d32; }
+        .btn-warning { background-color: #ff9800; color: white; border: none; }
+
+        /* Camera Scanner UI */
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; margin-top: 20px; border: none; background-color: #e0e0e0; min-height: 250px; display: flex; justify-content: center; align-items: center;}
+        #reader video { border-radius: 10px; object-fit: cover; }
+        .camera-loading { text-align: center; color: #666; margin-top: 20px; font-style: italic; padding: 10px;}
+        .error-text { color: #d32f2f; font-weight: bold; font-style: normal; }
+
+        /* Dashboard UI */
+        .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid #eee; margin-bottom: 20px; }
+        .point-card { background: linear-gradient(135deg, #2e7d32, #4caf50); color: white; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(46, 125, 50, 0.3); }
+        .point-card h2 { margin: 0; font-size: 36px; }
+        
+        .status-box { text-align: center; margin-top: 10px; padding: 20px; border: 1px solid #c8e6c9; border-radius: 10px; background-color: #e8f5e9; }
+        
+        /* Hidden Trigger Button for Demo */
+        .demo-trigger { padding: 15px; background-color: #1976d2; color: white; border: none; border-radius: 8px; margin-top: auto; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(25, 118, 210, 0.3); }
+
+        /* Notification Popup (Modal) */
+        .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(3px); }
+        .modal { background: white; padding: 30px; border-radius: 15px; width: 85%; text-align: center; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-icon { font-size: 50px; margin-bottom: 10px; }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <!-- SCREEN 1: LOGIN -->
+    <div id="login-screen" class="screen active">
+        <div style="margin-top: 60px;" class="text-center">
+            <h1 class="text-green">EcoSort</h1>
+            <p>Smart Waste Management</p>
+        </div>
+        <div style="margin-top: 40px;">
+            <input type="text" placeholder="Phone Number" value="01712345678">
+            <input type="password" placeholder="Password" value="password123">
+            <button class="btn" onclick="showScreen('scan-screen')">Login & Scan</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: LIVE QR SCANNER -->
+    <div id="scan-screen" class="screen">
+        <div class="header">
+            <h3>Scan Dustbin QR</h3>
+            <span onclick="stopScannerAndLogout()" style="cursor:pointer; color:#666;">Cancel</span>
+        </div>
+        <p class="text-center">Point your camera at the QR code on the dustbin to unlock it.</p>
+        
+        <!-- Camera Container -->
+        <div id="reader"></div>
+        <p class="camera-loading" id="camera-status">Requesting camera permissions...</p>
+        
+        <button id="fallback-btn" class="btn btn-outline" onclick="simulateScan()" style="margin-top: auto;">[Skip/Simulate Scan]</button>
+    </div>
+
+    <!-- SCREEN 3: DASHBOARD / AWAITING WASTE -->
+    <div id="dashboard-screen" class="screen">
+        <div class="header">
+            <h3>My Dashboard</h3>
+            <span onclick="showScreen('scan-screen')" style="cursor:pointer; color:#2e7d32;">Scan Again</span>
+        </div>
+        
+        <div class="point-card">
+            <p style="color: #e8f5e9; margin: 0 0 5px 0;">Total Points Balance</p>
+            <h2 id="total-points">1,250</h2>
+        </div>
+
+        <div class="status-box">
+            <h3 style="margin:0 0 5px 0; color:#2e7d32;">🔓 Bin Unlocked</h3>
+            <p style="margin:0; font-size: 13px; color: #555;">Bin ID: <strong id="scanned-bin-id">Connecting...</strong></p>
+            <p style="margin:15px 0 0 0; font-weight: bold;">Please drop your waste into the tray for automated sorting.</p>
+        </div>
+
+        <!-- The trigger button requested for demonstration -->
+        <button class="demo-trigger" onclick="triggerHardwareDrop()">[Hardware Demo] Trigger Waste Analysis</button>
+    </div>
+
+    <!-- NOTIFICATION MODAL -->
+    <div id="notification-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-icon">♻️</div>
+            <h2 class="text-green">Waste Processed!</h2>
+            <p style="margin-bottom: 5px;"><strong>Category:</strong> <span id="waste-type">Organic</span></p>
+            <p style="margin-top: 0;"><strong>Weight:</strong> <span id="waste-weight">1.2 kg</span></p>
+            <h1 style="color: #ff9800; margin: 15px 0;" id="earned-points">+45 Points</h1>
+            <button class="btn" onclick="closeModal()">Collect Points</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let html5QrCode;
+    let currentPoints = 1250;
+
+    // Navigation logic
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        document.getElementById(screenId).classList.add('active');
+
+        // Handle camera lifecycle based on screen
+        if (screenId === 'scan-screen') {
+            startCamera();
+        } else if (html5QrCode) {
+            stopCamera();
+        }
+    }
+
+    // --- QR SCANNER LOGIC ---
+    function startCamera() {
+        const statusEl = document.getElementById('camera-status');
+        const fallbackBtn = document.getElementById('fallback-btn');
+
+        // Security check - Browsers block camera on local files without https
+        if (window.isSecureContext === false) {
+            statusEl.innerHTML = "<span class='error-text'>Camera Blocked by Phone!</span><br><br>Browsers block cameras on local files. To use the camera, you must upload this file to a free host like <b>tiiny.host</b> to get an HTTPS link.";
+            fallbackBtn.classList.remove('btn-outline');
+            fallbackBtn.classList.add('btn-warning');
+            fallbackBtn.innerText = "Click here to Simulate Scan instead";
+            document.getElementById('reader').innerHTML = "📷🚫";
+            document.getElementById('reader').style.fontSize = "50px";
+            return;
+        }
+
+        statusEl.innerText = "Initializing camera...";
+        
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            config, 
+            (decodedText, decodedResult) => {
+                document.getElementById('scanned-bin-id').innerText = decodedText;
+                if (navigator.vibrate) navigator.vibrate(200);
+                showScreen('dashboard-screen');
+            },
+            (errorMessage) => {
+                // Ignore typical frame reading errors
+                statusEl.innerText = "Looking for QR code...";
+            }
+        ).catch((err) => {
+            statusEl.innerHTML = "<span class='error-text'>Camera access denied.</span> Make sure you clicked 'Allow' when the browser asked for permission.";
+            fallbackBtn.classList.remove('btn-outline');
+            fallbackBtn.classList.add('btn-warning');
+            console.error(err);
+        });
+    }
+
+    function stopCamera() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().catch(err => console.error("Error stopping camera", err));
+        }
+    }
+
+    function stopScannerAndLogout() {
+        stopCamera();
+        showScreen('login-screen');
+    }
+
+    function simulateScan() {
+        document.getElementById('scanned-bin-id').innerText = "DEMO-BIN-DHAKA-01";
+        showScreen('dashboard-screen');
+    }
+
+    // --- HARDWARE SIMULATION LOGIC ---
+    function triggerHardwareDrop() {
+        const types = ['Organic / Wet', 'Dry Recyclable', 'Metal'];
+        const weights = ['0.8', '1.2', '2.5', '0.4', '1.5'];
+        const pointsArray = [15, 45, 120, 30, 60];
+        
+        const typeIndex = Math.floor(Math.random() * types.length);
+        const weightIndex = Math.floor(Math.random() * weights.length);
+        const earned = pointsArray[weightIndex];
+
+        document.getElementById('waste-type').innerText = types[typeIndex];
+        document.getElementById('waste-weight').innerText = weights[weightIndex] + " kg";
+        document.getElementById('earned-points').innerText = "+" + earned + " Points";
+        
+        document.getElementById('notification-modal').dataset.earned = earned;
+        document.getElementById('notification-modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('notification-modal').style.display = 'none';
+        const earned = parseInt(document.getElementById('notification-modal').dataset.earned);
+        currentPoints += earned;
+        document.getElementById('total-points').innerText = currentPoints.toLocaleString();
+    }
+</script>
+
+</body>
+</html>
