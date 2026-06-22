@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,102 +5,401 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>EcoSort - Smart Waste</title>
     <!-- Include the HTML5 QR Code Library -->
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="[https://unpkg.com/html5-qrcode](https://unpkg.com/html5-qrcode)" type="text/javascript"></script>
     <style>
-        /* Bulletproof Reset */
-        .eco-wrapper { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; width: 100vw; overflow: hidden; }
-        .eco-wrapper * { box-sizing: border-box; }
+        /* Strict Reset to prevent Vercel/Framework overrides */
+        html, body { margin: 0 !important; padding: 0 !important; width: 100vw !important; height: 100vh !important; overflow: hidden !important; background-color: #f0f2f5 !important; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important; }
+        * { box-sizing: border-box !important; }
         
         /* Mobile Device Container */
-        .eco-app-container { width: 100%; max-width: 400px; height: 100vh; background-color: #ffffff; position: relative; display: block; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.1); margin: 0 auto; }
+        .app-container { width: 100%; max-width: 400px; height: 100vh; background-color: #ffffff; position: relative; margin: 0 auto; box-shadow: 0 0 20px rgba(0,0,0,0.1); overflow: hidden; display: block; }
         
-        /* Screens - Absolutely positioned to prevent flex-row squishing */
-        .eco-screen { display: none !important; flex-direction: column; width: 100%; height: 100%; padding: 20px; position: absolute; top: 0; left: 0; background-color: #ffffff; animation: ecoFadeIn 0.3s ease-in-out; z-index: 1; overflow-y: auto; }
-        .eco-screen.eco-active { display: flex !important; z-index: 10; }
-        @keyframes ecoFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Screens */
+        .screen { display: none; flex-direction: column; width: 100%; height: 100%; padding: 20px; position: absolute; top: 0; left: 0; background-color: #ffffff; z-index: 1; }
+        .screen.active { display: flex; z-index: 10; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         /* Typography & Colors */
-        .eco-h1 { font-size: 28px; color: #1a1a1a; margin-bottom: 5px; font-weight: bold; }
-        .eco-p { color: #666; font-size: 15px; }
-        .eco-text-center { text-align: center; }
-        .eco-text-green { color: #2e7d32; }
-
+        .title { font-size: 28px; color: #2e7d32; margin-bottom: 5px; font-weight: bold; text-align: center; }
+        .subtitle { color: #666; font-size: 15px; text-align: center; margin-top: 0; }
+        
         /* Inputs & Buttons */
-        .eco-input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; display: block; }
-        .eco-btn { width: 100%; padding: 15px; background-color: #2e7d32; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; display: block; text-align: center; }
-        .eco-btn:active { background-color: #1b5e20; }
-        .eco-btn-outline { background-color: transparent; color: #2e7d32; border: 2px solid #2e7d32; }
-        .eco-btn-warning { background-color: #ff9800; color: white; border: none; }
-        .eco-btn-danger { background-color: #d32f2f; color: white; border: none; }
+        input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; display: block; }
+        .btn { width: 100%; padding: 15px; background-color: #2e7d32; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; display: block; text-align: center; }
+        .btn:active { background-color: #1b5e20; }
+        .btn-outline { background-color: transparent; color: #2e7d32; border: 2px solid #2e7d32; }
+        .btn-warning { background-color: #ff9800; color: white; border: none; }
+        .btn-danger { background-color: #d32f2f; color: white; border: none; }
 
-        /* Camera Scanner UI */
-        #reader { width: 100%; border-radius: 10px; overflow: hidden; margin-top: 20px; border: none; background-color: #e0e0e0; min-height: 250px; display: flex; justify-content: center; align-items: center;}
-        #reader video { border-radius: 10px; object-fit: cover; width: 100%; }
-        .eco-camera-loading { text-align: center; color: #666; margin-top: 20px; font-style: italic; padding: 10px;}
-        .eco-error-text { color: #d32f2f; font-weight: bold; font-style: normal; }
-
-        /* Dashboard UI */
-        .eco-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid #eee; margin-bottom: 20px; }
-        .eco-point-card { background: linear-gradient(135deg, #2e7d32, #4caf50); color: white; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(46, 125, 50, 0.3); }
-        .eco-point-card h2 { margin: 0; font-size: 36px; }
+        /* Dashboard & Scanner */
+        .header-bar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid #eee; margin-bottom: 20px; }
+        .point-card { background: linear-gradient(135deg, #2e7d32, #4caf50); color: white; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
+        .status-box { text-align: center; margin-top: 10px; padding: 20px; border: 1px solid #c8e6c9; border-radius: 10px; background-color: #e8f5e9; }
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; margin-top: 20px; background-color: #e0e0e0; min-height: 250px; display: flex; justify-content: center; align-items: center; }
+        #reader video { width: 100% !important; border-radius: 10px; }
         
-        .eco-status-box { text-align: center; margin-top: 10px; padding: 20px; border: 1px solid #c8e6c9; border-radius: 10px; background-color: #e8f5e9; }
-        
-        /* Hidden Trigger Button for Demo */
-        .eco-demo-trigger { padding: 15px; background-color: #1976d2; color: white; border: none; border-radius: 8px; margin-top: auto; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(25, 118, 210, 0.3); width: 100%; display: block; }
+        /* Demo Trigger Button */
+        .demo-trigger { padding: 15px; background-color: #1976d2; color: white; border: none; border-radius: 8px; margin-top: auto; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; display: block; }
 
-        /* Notification Popup (Modal) */
-        .eco-modal-overlay { display: none !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(3px); }
-        .eco-modal-overlay.eco-show { display: flex !important; }
-        .eco-modal { background: white; padding: 30px; border-radius: 15px; width: 85%; max-width: 350px; text-align: center; animation: ecoPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .eco-modal-icon { font-size: 50px; margin-bottom: 10px; }
-        @keyframes ecoPopIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        /* Modal Inner Box */
+        .modal-box { background: white; padding: 30px; border-radius: 15px; width: 85%; max-width: 350px; text-align: center; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
-<body style="margin: 0; padding: 0;">
+<body>
 
-<div class="eco-wrapper">
-    <div class="eco-app-container">
+<div class="app-container">
 
-        <!-- SCREEN 1: LOGIN -->
-        <div id="login-screen" class="eco-screen eco-active">
-            <div style="margin-top: 60px;" class="eco-text-center">
-                <div class="eco-h1 eco-text-green">EcoSort</div>
-                <div class="eco-p">Smart Waste Management</div>
-            </div>
-            <div style="margin-top: 40px;">
-                <input class="eco-input" type="text" placeholder="Phone Number" value="01712345678">
-                <input class="eco-input" type="password" placeholder="Password" value="password123">
-                <button class="eco-btn" onclick="showScreen('scan-screen')">Login & Scan</button>
-            </div>
+    <!-- SCREEN 1: LOGIN -->
+    <div id="login-screen" class="screen active">
+        <div style="margin-top: 60px;">
+            <div class="title">EcoSort</div>
+            <p class="subtitle">Smart Waste Management</p>
+        </div>
+        <div style="margin-top: 40px;">
+            <input type="text" placeholder="Phone Number" value="01712345678">
+            <input type="password" placeholder="Password" value="password123">
+            <button class="btn" onclick="showScreen('scan-screen')">Login & Scan</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: SCANNER -->
+    <div id="scan-screen" class="screen">
+        <div class="header-bar">
+            <h3 style="margin:0;">Scan Dustbin</h3>
+            <span onclick="stopScannerAndLogout()" style="cursor:pointer; color:#666; font-weight:bold;">Cancel</span>
+        </div>
+        <p class="subtitle">Point your camera at the QR code on the dustbin to unlock it.</p>
+        
+        <div id="reader"></div>
+        <div id="camera-status" style="text-align: center; color: #666; margin-top: 20px; font-style: italic;">Requesting camera permissions...</div>
+        
+        <button id="fallback-btn" class="btn btn-outline" onclick="simulateScan()" style="margin-top: auto;">[Skip/Simulate Scan]</button>
+    </div>
+
+    <!-- SCREEN 3: DASHBOARD -->
+    <div id="dashboard-screen" class="screen">
+        <div class="header-bar">
+            <h3 style="margin:0;">My Dashboard</h3>
+            <span onclick="showScreen('scan-screen')" style="cursor:pointer; color:#2e7d32; font-weight:bold;">Scan Again</span>
+        </div>
+        
+        <div class="point-card">
+            <p style="margin: 0 0 5px 0; font-size:14px; opacity: 0.9;">Total Points Balance</p>
+            <h2 id="total-points" style="margin: 0; font-size: 36px;">1,250</h2>
         </div>
 
-        <!-- SCREEN 2: LIVE QR SCANNER -->
-        <div id="scan-screen" class="eco-screen">
-            <div class="eco-header">
-                <h3 style="margin:0;">Scan Dustbin</h3>
-                <span onclick="stopScannerAndLogout()" style="cursor:pointer; color:#666; font-weight:bold;">Cancel</span>
-            </div>
-            <div class="eco-p eco-text-center">Point your camera at the QR code on the dustbin to unlock it.</div>
-            
-            <!-- Camera Container -->
-            <div id="reader"></div>
-            <div class="eco-camera-loading" id="camera-status">Requesting camera permissions...</div>
-            
-            <button id="fallback-btn" class="eco-btn eco-btn-outline" onclick="simulateScan()" style="margin-top: auto;">[Skip/Simulate Scan]</button>
+        <div class="status-box">
+            <h3 style="margin:0 0 5px 0; color:#2e7d32;">🔓 Bin Unlocked</h3>
+            <p style="margin:0; font-size: 13px; color: #555;">Bin ID: <strong id="scanned-bin-id">Connecting...</strong></p>
+            <p style="margin:15px 0 0 0; font-weight: bold; font-size: 15px;">Please drop your waste into the tray for automated sorting.</p>
         </div>
 
-        <!-- SCREEN 3: DASHBOARD / AWAITING WASTE -->
-        <div id="dashboard-screen" class="eco-screen">
-            <div class="eco-header">
-                <h3 style="margin:0;">My Dashboard</h3>
-                <span onclick="showScreen('scan-screen')" style="cursor:pointer; color:#2e7d32; font-weight:bold;">Scan Again</span>
-            </div>
-            
-            <div class="eco-point-card">
-                <p style="color: #e8f5e9; margin: 0 0 5px 0; font-size:14px;">Total Points Balance</p>
-                <h2 id="total-points">1,250</h2>
-            </div>
+        <!-- Sequence Trigger -->
+        <button class="demo-trigger" onclick="triggerHardwareDrop()">[Demo] Trigger Next Item</button>
+    </div>
+
+</div>
+
+<!-- 
+  MODALS: Hidden using strict INLINE CSS so global framework styles cannot override them. 
+-->
+
+<!-- SUCCESS NOTIFICATION MODAL -->
+<div id="notification-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
+    <div class="modal-box">
+        <div style="font-size: 50px; margin-bottom: 10px;">♻️</div>
+        <h2 style="color: #2e7d32; margin-top:0;">Processed!</h2>
+        <p style="margin-bottom: 5px; font-size: 16px;"><strong>Category:</strong> <span id="waste-type">Organic</span></p>
+        <p style="margin-top: 0; font-size: 16px;"><strong>Weight:</strong> <span id="waste-weight">1.2 kg</span></p>
+        <h1 style="color: #ff9800; margin: 15px 0; font-size: 32px;" id="earned-points">+45 Points</h1>
+        <button class="btn" onclick="closeModal()">Collect Points</button>
+    </div>
+</div>
+
+<!-- ACCOUNT LOCKED MODAL (HAZARDOUS) -->
+<div id="locked-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
+    <div class="modal-box">
+        <div style="font-size: 50px; margin-bottom: 10px;">⚠️</div>
+        <h2 style="color: #d32f2f; margin-top:0;">Account Locked</h2>
+        <p style="margin-bottom: 5px; font-size: 16px;"><strong>Category:</strong> Hazardous / Unknown</p>
+        <p style="margin-top: 15px; font-size: 14px; color: #555; line-height: 1.5;">Unsafe or invalid materials have been detected in the sorting tray. Your account has been suspended.</p>
+        <button class="btn btn-danger" onclick="forceLogout()" style="margin-top: 20px;">Return to Login</button>
+    </div>
+</div>
+
+<script>
+    let html5QrCode;
+    let currentPoints = 1250;
+    let testStep = 0; // Step tracker for hardware demo
+
+    // Screen Navigation
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        document.getElementById(screenId).classList.add('active');
+
+        if (screenId === 'scan-screen') {
+            startCamera();
+        } else if (html5QrCode) {
+            stopCamera();
+        }
+    }
+
+    // Camera Logic
+    function startCamera() {
+        const statusEl = document.getElementById('camera-status');
+        const fallbackBtn = document.getElementById('fallback-btn');
+
+        if (window.isSecureContext === false) {
+            statusEl.innerHTML = "<span style='color:red; font-weight:bold;'>Camera Blocked!</span><br>Upload to an HTTPS server (like Vercel) to enable camera access.";
+            fallbackBtn.classList.remove('btn-outline');
+            fallbackBtn.classList.add('btn-warning');
+            fallbackBtn.innerText = "Click here to Simulate Scan";
+            document.getElementById('reader').innerHTML = "<div style='font-size:50px;'>📷🚫</div>";
+            return;
+        }
+
+        statusEl.innerText = "Initializing camera...";
+        
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            config, 
+            (decodedText, decodedResult) => {
+                document.getElementById('scanned-bin-id').innerText = decodedText;
+                if (navigator.vibrate) navigator.vibrate(200);
+                showScreen('dashboard-screen');
+            },
+            (errorMessage) => {
+                statusEl.innerText = "Looking for QR code...";
+            }
+        ).catch((err) => {
+            statusEl.innerHTML = "<span style='color:red; font-weight:bold;'>Camera access denied.</span>";
+            fallbackBtn.classList.remove('btn-outline');
+            fallbackBtn.classList.add('btn-warning');
+        });
+    }
+
+    function stopCamera() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().catch(err => console.error(err));
+        }
+    }
+
+    function stopScannerAndLogout() {
+        stopCamera();
+        showScreen('login-screen');
+    }
+
+    function simulateScan() {
+        document.getElementById('scanned-bin-id').innerText = "DEMO-BIN-DHAKA-01";
+        showScreen('dashboard-screen');
+    }
+
+    // Hardware Simulation Sequence
+    function triggerHardwareDrop() {
+        if (testStep === 0) {
+            triggerSuccessModal('Dry Recyclable', '50 gram', 10);
+            testStep++;
+        } 
+        else if (testStep === 1) {
+            triggerSuccessModal('Metal', '70 gram', 15);
+            testStep++;
+        } 
+        else if (testStep === 2) {
+            triggerSuccessModal('Organic / Wet', '30 gram', 20);
+            testStep++;
+        } 
+        else if (testStep >= 3) {
+            // Using inline style display swap to guarantee visibility changes
+            document.getElementById('locked-modal').style.display = 'flex';
+        }
+    }
+
+    function triggerSuccessModal(type, weight, earned) {
+        document.getElementById('waste-type').innerText = type;
+        document.getElementById('waste-weight').innerText = weight;
+        document.getElementById('earned-points').innerText = "+" + earned + " Points";
+        document.getElementById('notification-modal').dataset.earned = earned;
+        
+        // Using inline style display swap
+        document.getElementById('notification-modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        // Hide modal
+        document.getElementById('notification-modal').style.display = 'none';
+        
+        // Add points
+        const earned = parseInt(document.getElementById('notification-modal').dataset.earned);
+        currentPoints += earned;
+        document.getElementById('total-points').innerText = currentPoints.toLocaleString();
+    }
+
+    function forceLogout() {
+        // Hide modal
+        document.getElementById('locked-modal').style.display = 'none';
+        
+        // Reset simulation and go to login
+        testStep = 0; 
+        showScreen('login-screen');
+    }
+</script>
+
+</body>
+</html>-->
+
+<!-- SUCCESS NOTIFICATION MODAL -->
+<div id="notification-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
+    <div class="modal-box">
+        <div style="font-size: 50px; margin-bottom: 10px;">♻️</div>
+        <h2 style="color: #2e7d32; margin-top:0;">Processed!</h2>
+        <p style="margin-bottom: 5px; font-size: 16px;"><strong>Category:</strong> <span id="waste-type">Organic</span></p>
+        <p style="margin-top: 0; font-size: 16px;"><strong>Weight:</strong> <span id="waste-weight">1.2 kg</span></p>
+        <h1 style="color: #ff9800; margin: 15px 0; font-size: 32px;" id="earned-points">+45 Points</h1>
+        <button class="btn" onclick="closeModal()">Collect Points</button>
+    </div>
+</div>
+
+<!-- ACCOUNT LOCKED MODAL (HAZARDOUS) -->
+<div id="locked-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
+    <div class="modal-box">
+        <div style="font-size: 50px; margin-bottom: 10px;">⚠️</div>
+        <h2 style="color: #d32f2f; margin-top:0;">Account Locked</h2>
+        <p style="margin-bottom: 5px; font-size: 16px;"><strong>Category:</strong> Hazardous / Unknown</p>
+        <p style="margin-top: 15px; font-size: 14px; color: #555; line-height: 1.5;">Unsafe or invalid materials have been detected in the sorting tray. Your account has been suspended.</p>
+        <button class="btn btn-danger" onclick="forceLogout()" style="margin-top: 20px;">Return to Login</button>
+    </div>
+</div>
+
+<script>
+    let html5QrCode;
+    let currentPoints = 1250;
+    let testStep = 0; // Step tracker for hardware demo
+
+    // Screen Navigation
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        document.getElementById(screenId).classList.add('active');
+
+        if (screenId === 'scan-screen') {
+            startCamera();
+        } else if (html5QrCode) {
+            stopCamera();
+        }
+    }
+
+    // Camera Logic
+    function startCamera() {
+        const statusEl = document.getElementById('camera-status');
+        const fallbackBtn = document.getElementById('fallback-btn');
+
+        if (window.isSecureContext === false) {
+            statusEl.innerHTML = "<span style='color:red; font-weight:bold;'>Camera Blocked!</span><br>Upload to an HTTPS server (like Vercel) to enable camera access.";
+            fallbackBtn.classList.remove('btn-outline');
+            fallbackBtn.classList.add('btn-warning');
+            fallbackBtn.innerText = "Click here to Simulate Scan";
+            document.getElementById('reader').innerHTML = "<div style='font-size:50px;'>📷🚫</div>";
+            return;
+        }
+
+        statusEl.innerText = "Initializing camera...";
+        
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            config, 
+            (decodedText, decodedResult) => {
+                document.getElementById('scanned-bin-id').innerText = decodedText;
+                if (navigator.vibrate) navigator.vibrate(200);
+                showScreen('dashboard-screen');
+            },
+            (errorMessage) => {
+                statusEl.innerText = "Looking for QR code...";
+            }
+        ).catch((err) => {
+            statusEl.innerHTML = "<span style='color:red; font-weight:bold;'>Camera access denied.</span>";
+            fallbackBtn.classList.remove('btn-outline');
+            fallbackBtn.classList.add('btn-warning');
+        });
+    }
+
+    function stopCamera() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().catch(err => console.error(err));
+        }
+    }
+
+    function stopScannerAndLogout() {
+        stopCamera();
+        showScreen('login-screen');
+    }
+
+    function simulateScan() {
+        document.getElementById('scanned-bin-id').innerText = "DEMO-BIN-DHAKA-01";
+        showScreen('dashboard-screen');
+    }
+
+    // Hardware Simulation Sequence
+    function triggerHardwareDrop() {
+        if (testStep === 0) {
+            triggerSuccessModal('Dry Recyclable', '50 gram', 10);
+            testStep++;
+        } 
+        else if (testStep === 1) {
+            triggerSuccessModal('Metal', '70 gram', 15);
+            testStep++;
+        } 
+        else if (testStep === 2) {
+            triggerSuccessModal('Organic / Wet', '30 gram', 20);
+            testStep++;
+        } 
+        else if (testStep >= 3) {
+            // Using inline style display swap to guarantee visibility changes
+            document.getElementById('locked-modal').style.display = 'flex';
+        }
+    }
+
+    function triggerSuccessModal(type, weight, earned) {
+        document.getElementById('waste-type').innerText = type;
+        document.getElementById('waste-weight').innerText = weight;
+        document.getElementById('earned-points').innerText = "+" + earned + " Points";
+        document.getElementById('notification-modal').dataset.earned = earned;
+        
+        // Using inline style display swap
+        document.getElementById('notification-modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        // Hide modal
+        document.getElementById('notification-modal').style.display = 'none';
+        
+        // Add points
+        const earned = parseInt(document.getElementById('notification-modal').dataset.earned);
+        currentPoints += earned;
+        document.getElementById('total-points').innerText = currentPoints.toLocaleString();
+    }
+
+    function forceLogout() {
+        // Hide modal
+        document.getElementById('locked-modal').style.display = 'none';
+        
+        // Reset simulation and go to login
+        testStep = 0; 
+        showScreen('login-screen');
+    }
+</script>
+
+</body>
+</html>            </div>
 
             <div class="eco-status-box">
                 <h3 style="margin:0 0 5px 0; color:#2e7d32;">🔓 Bin Unlocked</h3>
